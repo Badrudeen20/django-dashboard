@@ -1,0 +1,35 @@
+
+{% extends "layout/base.html" %}
+
+
+{% block start %}
+<div class="container d-flex justify-content-center">
+
+<div class="container mt-2">
+   
+    <div class="row">
+        <div class="col-12">
+
+            <form class="container" action="" method="post">
+              {% csrf_token %}
+                <div class="form-group">
+                  <label for="label">Label</label>
+                  <input type="text" class="form-control" name="label" id="label" aria-describedby="label" placeholder="Enter label">
+                </div>
+                <div class="form-group">
+                  <label for="model">Model</label>
+                  <input type="text" class="form-control" name="model" id="model" aria-describedby="model" placeholder="Enter model">
+                </div>
+            
+                <button type="submit" class="btn btn-primary mt-2">Submit</button>
+              </form>
+        </div>
+
+      </div>
+  
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.7.0/jquery.min.js"></script>
+
+
+{% endblock %}

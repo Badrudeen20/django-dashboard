@@ -1,0 +1,39 @@
+
+{% extends "layout/base.html" %}
+
+
+{% block start %}
+<div class="container d-flex justify-content-center">
+
+<div class="container mt-2">
+   
+    <table class="table">
+        <thead>
+          <tr>
+           
+            <th scope="col">Module</th>
+            <th scope="col">Action</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>User Permission access</td>
+            <td>
+                <a href="{{ settings.BASE_URL }}/dashboard/user/{{userId}}/permission" class="btn btn-primary">Permission</a>
+            </td>
+          </tr>
+          <tr>
+            <td>User Profile access</td>
+            <td>
+                <a href="#" class="btn btn-primary">Profile</a>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+  
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.7.0/jquery.min.js"></script>
+
+
+{% endblock %}

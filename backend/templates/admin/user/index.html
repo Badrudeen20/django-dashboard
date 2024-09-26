@@ -1,0 +1,182 @@
+
+{% extends "layout/base.html" %}
+
+
+{% block start %}
+<div class="container d-flex justify-content-center">
+<link rel="stylesheet" href="https://cdn.datatables.net/1.13.6/css/jquery.dataTables.css" />
+
+
+<div class="container mt-2">
+    <a class="btn btn-primary" href="{{ settings.BASE_URL }}/dashboard/administration/users/add" style="margin-block: 20px;">Add User</a>
+    <div class="row">
+        <div class="col-12">
+            <table id="customer_table"  class="display" style="width:100%">
+                <thead>
+                    <tr>
+                        <th>Id</th>
+                        <th>Name</th>
+                        <th>Email</th>
+                        <th>Role</th>
+                        <th>Action</th>
+                    </tr>
+                </thead>
+
+            </table>
+        </div>
+
+      </div>
+  
+</div>
+
+<!-- Edit -->
+<div class="modal fade" id="EditModel" tabindex="-1" role="dialog" aria-labelledby="EditModel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered" role="document">
+      <form class="modal-content" method="post" id="EditForm">
+        {% csrf_token %}
+
+            <div class="modal-header">
+                <h5 class="modal-title" id="EditModelTitle">Modal Edit</h5>
+               
+            </div>
+            <div class="modal-body">
+               <div class="msg"></div>
+               <input type="hidden"  name="editid" >
+               <input type="hidden" name="type" value="EDIT">
+                <div class="form-group">
+                    <label for="label">Label</label>
+                    <input type="text" class="form-control" name="label" id="label" aria-describedby="label" placeholder="Enter label">
+                </div>
+                <div class="form-group">
+                    <label for="model">Model</label>
+                    <input type="text" class="form-control" name="model" id="model" aria-describedby="model" placeholder="Enter model">
+                </div>
+                
+               
+            </div>
+            <div class="modal-footer">
+                <button type="submit" class="btn btn-primary">Save </button>
+            </div>
+      </form>
+    </div>
+</div>
+
+
+<!-- Delete -->
+<div class="modal fade" id="DelModel" tabindex="-1" role="dialog" aria-labelledby="DelModel" aria-hidden="true">
+    <div class="modal-dialog" role="document">
+      <form class="modal-content" method="post" id="EditForm">
+        {% csrf_token %}
+            <div class="modal-header">
+            <h5 class="modal-title" id="DelModelTitle">Modal Delete</h5>
+                
+            </div>
+            <div class="modal-body">
+                        <div class="form-group">
+                            <label for="content">Are you sure</label>
+                            <input type="hidden" name="action" value="DELETE">
+                            <input type="hidden" name="delid"  >
+                        </div> 
+            </div>
+            <div class="modal-footer">
+                <button type="submit" class="btn btn-primary">Delete</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+
+<script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.js"></script>
+<script>
+    const csrftoken = document.querySelector('[name=csrfmiddlewaretoken]').value;
+    $(document).ready( function () {
+        loadData()
+    })
+
+    function loadData(){
+        var pgno = 0;
+        $('table.display').DataTable({
+            "processing" : true,
+			"serverSide" : true,
+            pageLength : 4,
+            ajax: function (data, callback, settings) {
+                var api = this.api();
+                var search = api.search() 
+                var pageInfo = api.page.info();
+                pgno = pageInfo.page+1;
+                
+                $.ajax({
+                    url: "{% url 'user' %}",
+                    method:"POST",
+                    headers: {'X-CSRFToken': csrftoken},
+                    data:{start:pgno, length:4,search:search,type:'FETCH'}
+                }).then ( function( json, textStatus, jqXHR ) {
+                    console.log(json)
+                    //  json["data"] = json["aaData"];
+                    //  json["recordsTotal"] = json["aaData"];
+                     callback(json);
+                });
+            },
+            // pageLength: 10,
+            columns: [
+                { data: "id" },
+                { data: "name" },
+                { data: "email" },
+                { data: "role" },
+                { data: "action" },
+                
+            ],
+         
+        });
+    }
+    function editModel(id,label,model){
+        $('#EditModel').modal('show');
+        $('[name="editid"]').val(id);
+        $('[name="label"]').val(label);
+        $('[name="model"]').val(model);
+    }
+    function delModel(id){
+        $('#DelModel').modal('show');
+        $('[name="delid"]').val(id);
+    }
+
+    $("#EditForm").submit(function (e) {
+        e.preventDefault();
+        var serializedData = $(this).serialize();
+       
+        $.ajax({
+            type: 'POST',
+            url: "",
+            headers: {'X-CSRFToken': csrftoken},
+            data: serializedData,
+            success: function (response) {
+                console.log(response)
+                if(response.success){
+                    $('#EditModel').modal('hide');
+                    $('.msg').html('')
+                    $('table.display').DataTable().clear().destroy();
+                    loadData()
+                }else{
+                   $('.msg').html(`<div class="alert alert-danger" role="alert">${response.msg}.</div>`)
+                }
+                // on successfull creating object
+                // 1. clear the form.
+                // $("#EditModel").trigger('reset');
+                // 2. focus to nickname input 
+                // $("#id_nick_name").focus();
+
+                // display the newly friend to table.
+                // var instance = JSON.parse(response["instance"]);
+                // var fields = instance[0]["fields"];
+              
+            },
+            error: function (response) {
+                // alert the error if any error occured
+                alert(response["responseJSON"]["error"]);
+            }
+        })
+    })
+
+</script>
+
+{% endblock %}

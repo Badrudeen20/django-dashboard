@@ -1,0 +1,181 @@
+
+{% extends "layout/base.html" %}
+
+
+{% block start %}
+<div class="container d-flex justify-content-center">
+<div class="container mt-2">
+   
+    <div class="row">
+        <div class="col-12">
+
+            <form class="container" action="" method="post">
+              {% csrf_token %}
+
+              
+                <!-- <input type="hidden"
+                  name="parentId" id="parentId" 
+                  {% if parentId %}
+                     value="{{parentId}}"
+                  {% endif %}
+                > -->
+                <input type="hidden"
+                  name="role" id="role" 
+                  {% if roleId %}
+                     value="{{roleId}}"
+                  {% endif %}
+                >
+                <input type="hidden" name="mpid" id="mpid" />
+                <input type="hidden"
+                 name="type" 
+                 {% if moduleId %}
+                   value="Edit"
+                 {% else %}
+                   value="Add"
+                 {% endif %}
+                 id="action" />
+               
+               
+
+            
+               
+                <!-- <div class="form-group">
+                  <label for="role">Select Role</label>
+                  
+                  <select class="form-select"  name="role" id="role" required>
+                    {% for role in roles %}
+                      {% if permission  %}
+                       {% for per in permission %}
+                         <option value="{{role.id}}" 
+                          {% if per.rid_id == role.id %}
+                            selected
+                          {% endif %}
+                         >
+                         {{role.name}}
+                        </option>
+                       {% endfor %}
+                      {% else %} 
+                         <option value="{{role.id}}" >{{role.name}}</option>
+                      {% endif %}
+                    {% endfor %}
+                  </select>
+                </div> -->
+
+
+                <div class="form-group">
+                  <label for="module">Select Module</label>
+                  <select class="form-select"  name="module" id="module" required>
+                    {% for parent in modules %}
+                      {% if permission  %}
+                       <!-- {% for per in permission %}
+                        <option value="{{parent.id}}"
+                          {% if per.mid_id == parent.id %}
+                            selected
+                          {% endif %}
+                        >
+                         {{parent.module}}
+                        </option>
+                       {% endfor %} -->
+                      {% else %} 
+                         <option value="{{parent.id}}" >{{parent.module}}</option>
+                      {% endif %}
+                    {% endfor %}
+                  </select>
+                </div>
+                <!-- <div class="form-group">
+                  <label for="permission">Select Permission</label>
+                </div>
+                <div class="form-group">
+                  <select class="selectpicker" name="permission" id="permission" multiple aria-label="Default select example" data-live-search="true">
+                    <option value="Add">Add</option>
+                    <option value="Edit">Edit</option>
+                    <option value="Delete">Delete</option>
+                    <option value="View">View</option>
+                  </select>
+                 
+                  <input type="text" class="form-control"
+                  {% for per in permission %}
+                    value="{{per.permission}}"
+                  {% endfor %}
+                  required name="permission" id="permission" aria-describedby="module" placeholder="Enter permission">
+                </div> -->
+                <div id="permission-box">
+
+                </div>
+                <button type="submit" class="btn btn-primary mt-2">Submit</button>
+              </form>
+        </div>
+
+      </div>
+  
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.7.0/jquery.min.js"></script>
+<script>
+ 
+  const csrftoken = document.querySelector('[name=csrfmiddlewaretoken]').value;
+  function getPermission(roleId,moduleId){
+    {% if moduleId %}
+       let action = "Edit"
+    {% else %}
+       let action = "Add"
+    {% endif %}
+    $.ajax({
+      type: 'POST',
+      url: "{{ settings.BASE_URL }}/dashboard/getPermission/", 
+      headers: {'X-CSRFToken': csrftoken},
+      data: {moduleId:moduleId,roleId:roleId,action:action},
+      
+      success: function (response) {
+            console.log(response)
+            if(response.Success){
+              
+              let isInclude  = response.selected
+              let permission = `<div class="dropdown"> 
+                                  <button class="btn btn-success dropdown-toggle"
+                                      type="button"
+                                      id="multiSelectDropdown"
+                                      data-bs-toggle="dropdown"
+                                      aria-expanded="false"> 
+                                    Select 
+                                  </button> 
+                                  <ul class="dropdown-menu"
+                                    aria-labelledby="multiSelectDropdown">`
+              response.data.forEach((e,i)=>{
+                    permission+=`<li> 
+                                    <label> 
+                                      <input type="checkbox"
+                                        name="permission[]"
+                                        ${isInclude.includes(e) ? 'checked':''}
+                                        value="${e}"> 
+                                        ${e}
+                                      </label> 
+                                  </li>`
+              })
+                                   
+              permission+=`</ul> 
+                          </div> `
+             
+              $('#permission-box').html(permission)
+              $('#mpid').val(response.mpid.pid)
+            }
+
+      },
+      error: function (response) {
+          // alert the error if any error occured
+          alert(response["responseJSON"]["error"]);
+      }
+    })   
+  }
+
+  {% if moduleId %}
+    getPermission("{{roleId}}","{{moduleId}}")
+  {% endif %}
+
+  $('#module').change(function(){
+    getPermission("{{roleId}}",$('#module').val())
+  })
+
+</script>
+
+{% endblock %}

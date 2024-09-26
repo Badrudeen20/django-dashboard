@@ -1,0 +1,88 @@
+
+{% extends "layout/base.html" %}
+
+
+{% block start %}
+<div class="container d-flex justify-content-center">
+<div class="container mt-2">
+   
+    <div class="row">
+        <div class="col-12">
+
+            <form class="container" action="" method="post">
+              {% csrf_token %}
+                <div class="form-group">
+                  <label for="module">Module Name</label>
+                  <input type="text" class="form-control" name="module" id="module" aria-describedby="module" placeholder="Enter module">
+                </div>
+
+                <input type="hidden"
+                name="type" 
+                {% if moduleId %}
+                  value="Edit"
+                {% else %}
+                  value="Add"
+                {% endif %}
+                id="action" />
+         
+                    {% if moduleId %}
+                    <div class="form-group">
+                      <label for="module">Select Module</label>
+                      <select class="form-select"  name="parent" id="moduleId" required>
+                        {% for parent in modules %}
+                             <option value="{{parent.id}}"
+                              {% if moduleId %}
+                                 {% if parent.id == moduleId %}
+                                    selected
+                                 {%  endif %}
+                              {% endif %}
+                             data-type="{{parent.moduleType}}">{{parent.module}}</option>
+                        {% endfor %}
+                      </select>
+                    </div>     
+                    {% else %}
+                       <input type="hidden" name="parent" value="{{moduleId}}" />
+                    {% endif %}
+                    
+
+                <div class="form-group">
+                  <label for="moduleType">Select Module Type</label>
+                  <select class="form-select"  name="moduleType" id="moduleType">
+                      <option value="2" selected>Folder</option>
+                  </select>
+                </div>
+
+                
+                <button type="submit" class="btn btn-primary mt-2">Submit</button>
+              </form>
+        </div>
+
+      </div>
+  
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.7.0/jquery.min.js"></script>
+<script>
+  $('#moduleId').change(function(){
+     let module = $(this).find('option:selected').attr('data-type')
+     updateModuleType(module)    
+  })
+
+  {% if moduleId %}
+     let module = $('#moduleId').find('option:selected').attr('data-type')    
+     updateModuleType(module)                 
+  {% endif %}
+
+  function updateModuleType(module){
+    let option = '<option value="2">Folder</option>'
+    if(module==1){
+      option = `<option value="3">Component</option>`
+    }else if(module==2){
+      option = `<option value="1">File</option>
+                <option value="2">Folder</option>`
+    }
+    $('#moduleType').html(option)
+  }
+</script>
+
+{% endblock %}
