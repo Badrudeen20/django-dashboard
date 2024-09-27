@@ -16,7 +16,9 @@ def permission_required():
                 return view(request, *args, **kwargs)      
                       
             elif request.method == 'POST':
-                kwargs['groupIds'] = list(request.user.groups.values_list('id', flat=True))
+                groupIds = list(request.user.groups.values_list('id', flat=True))
+                kwargs['moduleIds'] = list(GroupPermission.objects.filter(group__in=groupIds,permission='View').values_list('module', flat=True))
+                kwargs['groupIds'] = groupIds
                 return view(request, *args, **kwargs) 
    
              
@@ -33,7 +35,9 @@ def xhr_request_only():
         @wraps(view)
         def wrapper(request, *args, **kwargs):
             if request.headers.get('x-requested-with') == 'XMLHttpRequest':
-                kwargs['groupIds'] = list(request.user.groups.values_list('id', flat=True))
+                groupIds = list(request.user.groups.values_list('id', flat=True))
+                kwargs['moduleIds'] = list(GroupPermission.objects.filter(group__in=groupIds,permission='View').values_list('module', flat=True))
+                kwargs['groupIds'] = groupIds
                 return view(request, *args, **kwargs)     
         return wrapper
     return decorator

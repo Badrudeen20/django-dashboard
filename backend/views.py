@@ -1,4 +1,5 @@
 from django.shortcuts import render,redirect
+from django.http import HttpResponseRedirect
 from django.http import JsonResponse
 from django.contrib.auth import authenticate, login,logout
 from django.contrib.auth.models import Group, Permission,ContentType
@@ -183,8 +184,8 @@ def module(request,*args,**kwargs):
          startIndex = (int(start)-1) * int(length)
          endIndex = startIndex + int(length)
          # roleId = request.user.rid_id
-         groupIds = kwargs.get('groupIds')
-         moduleIds = list(GroupPermission.objects.filter(group__in=groupIds).values_list('module',flat=True))
+         moduleIds = kwargs.get('moduleIds')
+         # moduleIds = list(GroupPermission.objects.filter(group__in=groupIds).values_list('module',flat=True))
          uniqueModuleIds = list(dict.fromkeys(moduleIds))
         
          if search :
@@ -219,7 +220,6 @@ def module(request,*args,**kwargs):
 
    else:
       return render(request,"admin/module/index.html")
-
 
 @permission_required()
 def addeditModule(request,moduleId=""):
@@ -262,7 +262,6 @@ def addeditModule(request,moduleId=""):
 def rolePermission(request,*args,**kwargs):
     roleId = kwargs.get('roleId')
     if request.method == 'POST':
-     
       actionType = request.POST['type']
       if actionType == 'View':
          start = int(request.POST['start'])
@@ -270,9 +269,8 @@ def rolePermission(request,*args,**kwargs):
          search = request.POST['search']
          startIndex = (int(start)-1) * int(length)
          endIndex = startIndex + int(length)
+         moduleIds = kwargs.get('moduleIds')
          groupIds = kwargs.get('groupIds')
-         moduleIds =  list(GroupPermission.objects.filter(group__in=groupIds,permission='View').values_list('module', flat=True))
-         
          if search :
             data =  Module.objects.filter(module__contains=search,id__in=moduleIds)[startIndex:endIndex].all()
             totalLen = list(Module.objects.filter(module__contains=search,id__in=moduleIds).all())
@@ -282,15 +280,15 @@ def rolePermission(request,*args,**kwargs):
 
         
        
-         
+        
          listData = []
          lst = {}
          for i in data:
             per = '<div class="d-flex">' 
-            for b in i.grouppermissions.all():
+            for b in i.grouppermissions.filter(group__in=groupIds).all():
                per +=f'''
                         <div class="form-check px-3">
-                              <input class="form-check-input" type="checkbox" value="{b.id}" id="flexCheck{b.id}">
+                              <input class="form-check-input" name="permission[{b.module_id}][{b.module_parent_id}]" type="checkbox" value="{b.permission}" id="flexCheck{b.id}">
                               <label class="form-check-label" for="flexCheck{b.id}">{b.permission}</label>  
                         </div>
                      '''
@@ -308,34 +306,7 @@ def rolePermission(request,*args,**kwargs):
             }
            
             listData.append(permission)
-            #  if i.permission == 'Edit':
-            #       # btn = f'<a class="btn btn-primary" href="{settings.BASE_URL}dashboard/permission/edit/{i.mid_id}/{i.mpid}" >Edit</a>'
-            #       btn = f'Edit'
-            #  elif i.permission == 'Delete':
-            #       # btn = f'<button class="btn btn-warning" onclick=delModel({i.mid_id})>Delete</button>'
-            #       btn = f'Delete'
-            #  elif i.permission == 'View':
-            #       # btn = f'<a class="btn btn-danger" href="{settings.BASE_URL}dashboard/permission/{i.mid_id}">View</a>'
-            #       btn = f'View'
-            #  else:
-            #    #   btn = f'<button class="btn btn-success">Add</button>'
-            #       btn = f'Add'
-            #  if i.mid.module in lst:
-            #     lst[i.mid.module]["permission"].append(btn)
-            #  else:
-               #  lst[i.mid.module] = {
-               #                   "id":i.id,
-               #                   "moduleName":i.mid.module,
-               #                   "roleName":i.rid.name,
-               #                   "permission":[btn],
-               #                   "action":f'<a class="btn btn-primary" href="{settings.BASE_URL}dashboard/administration/permission/{roleId}/add-edit/{i.mid_id}">Change</a>'
-               #                }
-         
-         
-         # permissionList = []
-         # for x in lst:
-         #     permissionList.append(lst[x])
-         
+                   
          
          return JsonResponse({
             "success": True,
@@ -343,22 +314,46 @@ def rolePermission(request,*args,**kwargs):
             "iTotalDisplayRecords":len(totalLen),
             "aaData":listData
          }, status=200)
-
-      elif actionType == 'EDIT':
-         pass
-      else:
-         pass  
-         # delId = request.POST['delid']
-         # GroupPermission.objects.filter(mid_id=delId).delete()
-         # GroupPermission.objects.filter(mpid=delId).delete()
-         # return HttpResponseRedirect(request.META.get('HTTP_REFERER'))
     else:
       context = {
          "roleId":roleId
       }
       return render(request,"admin/permission/access.html",context)
-    
 
+@permission_required()  
+def savePermission(request,*args,**kwargs):
+    roleId = kwargs.get('roleId')
+    if request.method == 'POST':
+      moduleIds = kwargs.get('moduleIds')
+      moduleList =  Module.objects.filter(id__in=moduleIds).all()
+      post = request.POST
+      assign = {}
+      for i in moduleList:
+         permission = i.grouppermissions.values('module','module_parent_id','permission')
+         access = {}
+         for b in permission:
+            mid = b['module']
+            mpid = b['module_parent_id']
+            key = f'permission[{mid}][{mpid}]'
+            if b['permission'] in request.POST.getlist(key):
+               access[b['permission']] = [mid,mpid]
+               assign[i.id] = access
+     
+      group_list = []
+      group_instance = Group.objects.get(id=roleId)
+      for i in assign:
+          for b in assign[i]:
+               module_instance = Module.objects.get(id=assign[i][b][0])
+               group_permission = GroupPermission(
+                  permission=f"{b}",                  
+                  module=module_instance,                  
+                  module_parent_id=f"{assign[i][b][1]}",
+                  group=group_instance
+               )
+               group_list.append(group_permission)
+
+      GroupPermission.objects.bulk_create(group_list)   
+    return HttpResponseRedirect(request.META['HTTP_REFERER'])
 
 @permission_required()
 def addeditPermission(request,roleId=None,moduleId=None):
@@ -484,8 +479,7 @@ def moduleEdit(request,moduleId=None):
 
 @xhr_request_only()
 def sidebarList(request,*args,**kwargs):
-   groupIds = kwargs.get('groupIds')
-   moduleIds =  list(GroupPermission.objects.filter(group__in=groupIds,permission='View').values_list('module', flat=True))
+   moduleIds = kwargs.get('moduleIds')
    sidebarList =  list(Module.objects.filter(id__in=moduleIds).values())
    return JsonResponse({
       "success": True,

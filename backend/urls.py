@@ -15,6 +15,7 @@ urlpatterns = [
         path('dashboard/', views.dashboard, name ='dashboard'),
         path('administration/permission',views.permission),
         path('administration/permission/<int:roleId>',views.rolePermission,name="role-permission"),
+        path('module/permission/<int:roleId>',views.savePermission,name="save-permission"),
         path('administration/permission/<int:roleId>/add-edit',views.addeditPermission),
         path('administration/permission/<int:roleId>/add-edit/<int:moduleId>',views.addeditPermission),
         path('getPermission/',views.getPermission),
