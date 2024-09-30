@@ -9,9 +9,10 @@
 
 <div class="container mt-2">
    
-    <a class="btn btn-primary" href="{{ settings.BASE_URL }}/dashboard/administration/permission/{{roleId}}/add-edit" style="margin-block: 20px;">Add Permission</a>
+    <h4>Permission</h4>
     <div class="row">
         <form class="col-12" action="{{ settings.BASE_URL }}/admin/module/permission/{{roleId}}" method="post">
+            
             <table id="customer_table"  class="display" style="width:100%">
                 {% csrf_token %}
                 <thead>
@@ -36,31 +37,7 @@
       </div>
   
 </div>
-<!-- Delete -->
-<div class="modal fade" id="DelModel" tabindex="-1" role="dialog" aria-labelledby="DelModel" aria-hidden="true">
-    <div class="modal-dialog" role="document">
-      <form class="modal-content" method="post">
-        {% csrf_token %}
-            <div class="modal-header">
-            <h5 class="modal-title" id="DelModelTitle">Modal Delete</h5>
-                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-                    <span aria-hidden="true">&times;</span>
-                </button>
-            </div>
-            <div class="modal-body">
-                        <div class="form-group">
-                            <label for="content">Are you sure</label>
-                            <input type="hidden" name="type" value="DELETE">
-                            <input type="hidden" name="delid"  >
-                        </div> 
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
-                <button type="submit" class="btn btn-primary">Delete</button>
-            </div>
-        </form>
-    </div>
-</div>
+
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.7.0/jquery.min.js"></script>
 <script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.js"></script>
 <script>
@@ -68,88 +45,65 @@ const csrftoken = document.querySelector('[name=csrfmiddlewaretoken]').value;
 $(document).ready( function () {
     loadData()
 })
-
+var table;
 function loadData(){
-    var pgno = 0;
+    var pgno = 1;
+    var table = $('table.display');
+    // if ($.fn.dataTable.isDataTable(table)) {
+    //     table.DataTable().destroy();
+    // }
+   
     $('table.display').DataTable({
-            "processing" : true,
-			"serverSide" : true,
-            pageLength : 8,
-            ajax: function (data, callback, settings) {
-                var api = this.api();
-                var search = api.search() 
-                var pageInfo = api.page.info();
-                pgno = pageInfo.page+1;
-                
-                $.ajax({
-                    url: "{{ settings.BASE_URL }}/admin/administration/permission/"+"{{roleId}}",
-                    method:"POST",
-                    headers: {'X-CSRFToken': csrftoken},
-                    data:{start:pgno, length:8,search:search,type:'View'}
-                }).then ( function( json, textStatus, jqXHR ) {
-                     callback(json);
-                     console.log(json)
-                });
-            },
-            columns: [
-                { data: "id" },
-                { data: "moduleName" },
-                { data: "permission" },
-                { data: "action" },
-                
-            ],
-            
-        
-    });
-}
-
-
-
-function editModel(id,module,parent,moduleType){
-        
-       
-       
-        $.ajax({
-            type: 'GET',
-            url: "{% url 'module-list' %}",
+        "processing" : true,
+        "serverSide" : true,
+        pageLength : 8,
+        /*   ajax:{
+            url: "{{ settings.BASE_URL }}/admin/administration/permission/"+"{{roleId}}",
+            type: "POST",
             headers: {'X-CSRFToken': csrftoken},
-            success: function (response) {
-                if(response.permission.length){
-                    if(response.permission.includes("edit")){
-                        $('#EditModel').modal('show');
-                        $('[name="editid"]').val(id);
-                        $('[name="module"]').val(module);
-                        $('#moduleType').html(`
-                            <option value="1" ${(moduleType==1) ? 'selected':''}>File</option>
-                            <option value="2" ${(moduleType==2) ? 'selected':''}>Folder</option>
-                        `)
-                        let opt = '<option value="">select parents</option>'
-                        response.data.forEach(ele=>{
-                            opt +=`<option value="${ele.id}" ${(ele.id ==parent) ? 'selected':'' } >${ele.module}</option>`
-                        })
-                        $('#parent').html(opt)
-                    }else{
-                      alert('You dont have permission to edit!')
-                    }
-                    
-                }
-                
-                
+            data: function(d) {
+                d.start=pgno
+                d.length=8
+                d.search=''
+                d.type='View'
+                d.parent=parent
             },
-            error: function (response) {
-                // alert the error if any error occured
-                alert(response["responseJSON"]["error"]);
-            }
-        })
-    }
-
-
-
-function delModel(mid){
-    $('#DelModel').modal('show');
-    $('[name="delid"]').val(mid);
+        }, */
+        ajax: function (data, callback, settings) {
+            var api = this.api();
+            var search = api.search() 
+            var pageInfo = api.page.info();
+            pgno = pageInfo.page+1;
+            $.ajax({
+                url: "{{ settings.BASE_URL }}/admin/administration/permission/"+"{{roleId}}"+"/{{parentId}}",
+                method:"POST",
+                headers: {'X-CSRFToken': csrftoken},
+                data:{start:pgno, length:8,search:search,type:'View'},
+            }).then ( function( json, textStatus, jqXHR ) {
+                callback(json);
+                console.log(json)
+            });
+        },
+        columns: [
+            { data: "id" },
+            { data: "moduleName" },
+            { data: "permission" },
+            { data: "action" },
+            
+        ],  
+    });
+   
+        // tableSelector.DataTable().destroy();
+        // table.ajax.reload(function(json){
+        //     return json
+        // },false);
+       
     
+
 }
+
+
+
 </script>
 </div>
 

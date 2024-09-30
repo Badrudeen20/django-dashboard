@@ -1,0 +1,117 @@
+
+{% extends "layout/base.html" %}
+
+
+{% block start %}
+<div class="container d-flex justify-content-center">
+<link rel="stylesheet" href="https://cdn.datatables.net/1.13.6/css/jquery.dataTables.css" />
+
+
+<div class="container mt-2">
+    <a href="{{ settings.BASE_URL }}post/add" class="btn btn-sm btn-primary my-2">Add Movie</a>
+    <div class="row">
+        <div class="col-12">
+            <table class="display" style="width:100%">
+                <thead>
+                    <tr>
+                        <th>Id</th>
+                        <th>Name</th>
+                        <th>Rate</th>
+                        <th>Action</th>
+                    </tr>
+                </thead>
+
+            </table>
+        </div>
+
+      </div>
+  
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.7.0/jquery.min.js"></script>
+<script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.js"></script>
+<script>
+const csrftoken = document.querySelector('[name=csrfmiddlewaretoken]').value;
+$(document).ready( function () {
+    loadData()
+})
+
+
+
+function loadData(){
+    var pgno = 0;
+    $('table.display').DataTable({
+            "processing" : true,
+			"serverSide" : true,
+            pageLength : 8,
+            ajax: function (data, callback, settings) {
+                var api = this.api();
+                var search = api.search() 
+                var pageInfo = api.page.info();
+                pgno = pageInfo.page+1;
+                
+                $.ajax({
+                    url: "{{ settings.BASE_URL }}/admin/movie/post",
+                    method:"POST",
+                    headers: {'X-CSRFToken': csrftoken},
+                    data:{start:pgno, length:8,search:search,type:'View'}
+                }).then ( function( json, textStatus, jqXHR ) {
+                     callback(json);
+                     console.log(json)
+                });
+            },
+
+            // pageLength: 10,
+            columns: [
+                { data: "id" },
+                { data: "name" },
+                { data: "rate" },
+                { data: "action" },
+                
+            ],
+        
+    });
+}
+
+function editModel(id,module,parent,moduleType){
+        
+       
+       
+        $.ajax({
+            type: 'GET',
+            url: "{% url 'module-list' %}",
+            headers: {'X-CSRFToken': csrftoken},
+            success: function (response) {
+                if(response.permission.length){
+                    if(response.permission.includes("edit")){
+                        $('#EditModel').modal('show');
+                        $('[name="editid"]').val(id);
+                        $('[name="module"]').val(module);
+                        $('#moduleType').html(`
+                            <option value="1" ${(moduleType==1) ? 'selected':''}>File</option>
+                            <option value="2" ${(moduleType==2) ? 'selected':''}>Folder</option>
+                        `)
+                        let opt = '<option value="">select parents</option>'
+                        response.data.forEach(ele=>{
+                            opt +=`<option value="${ele.id}" ${(ele.id ==parent) ? 'selected':'' } >${ele.module}</option>`
+                        })
+                        $('#parent').html(opt)
+                    }else{
+                      alert('You dont have permission to edit!')
+                    }
+                    
+                }
+                
+                
+            },
+            error: function (response) {
+                // alert the error if any error occured
+                alert(response["responseJSON"]["error"]);
+            }
+        })
+    }
+
+</script>
+</div>
+
+{% endblock %}

@@ -34,3 +34,13 @@ class UserRegistrationForm(forms.Form):
         widget = forms.PasswordInput(attrs={'class': 'form-control', 'placeholder': 'Enter password'}),
         
     )
+
+
+class MovieForm(forms.Form):
+    name = forms.CharField(max_length=100, required=True)
+    image = forms.CharField(required=True)
+    rate = forms.DecimalField(required=True)
+    size = forms.DecimalField(required=True)
+    genre = forms.CharField(required=True)
+    lang = forms.CharField(required=True)
+    story = forms.CharField(required=True)

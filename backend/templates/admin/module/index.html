@@ -112,11 +112,7 @@
         loadData()
     })
   
-    {% if parentId %}
-     let parentId = {{parentId}}
-    {% else %}
-    let parentId = ""
-    {% endif %}
+    
     function loadData(){
         var pgno = 0;
         $('table.display').DataTable({
@@ -133,7 +129,7 @@
                     url: "{{ settings.BASE_URL }}/admin/administration/module",
                     method:"POST",
                     headers: {'X-CSRFToken': csrftoken},
-                    data:{start:pgno, length:4,search:search,type:'View',parentId:parentId}
+                    data:{start:pgno, length:4,search:search}
                 }).then ( function( json, textStatus, jqXHR ) {
                     console.log(json)
                      callback(json);
