@@ -1,6 +1,7 @@
 from django import forms
 from django.contrib.auth.forms import AuthenticationForm
-
+from frontend.models import Posts
+from django.core.exceptions import ValidationError
 
 class UserLoginForm(AuthenticationForm):
     def __init__(self, *args, **kwargs):
@@ -36,7 +37,12 @@ class UserRegistrationForm(forms.Form):
     )
 
 
+
+# class MovieForm(forms.Form):
+#     def __init__(self, *args, **kwargs):
+
 class MovieForm(forms.Form):
+   
     name = forms.CharField(max_length=100, required=True)
     image = forms.CharField(required=True)
     rate = forms.DecimalField(required=True)

@@ -23,7 +23,7 @@ def home(request):
            
          else:
             data = Posts.objects.filter(status=1).all()[startIndex:endIndex]
-            totalLen = Posts.objects.count()
+            totalLen = Posts.objects.filter(status=1).count()
            
          listData = []
          for i in data:

@@ -48,7 +48,7 @@ def register(request):
             email =  userObj['email']
             password =  userObj['password']
             if not (User.objects.filter(username=username).exists() or User.objects.filter(email=email).exists()):
-                print(password)
+               #  print(password)
                 User.objects.create_user(username, email, password)
                 user = authenticate(username = username, password = password)
                 login(request, user)
@@ -120,8 +120,8 @@ def permission(request,*args,**kwargs):
 
 @permission_required()
 def module(request,*args,**kwargs):
+   parentId = kwargs.get('parentId', '')
    if request.method == 'POST':
-      
       start = request.POST['start']
       length = request.POST['length']
       search = request.POST['search']
@@ -130,19 +130,23 @@ def module(request,*args,**kwargs):
       moduleIds = kwargs.get('moduleIds')
       listData = []
       totalLen=0
-      if kwargs.get('access'):
+      if 'View' in kwargs.get('permission'):
          if search :
-            data = Module.objects.filter(id__in=moduleIds,module__contains=search)[startIndex:endIndex].all()
-            totalLen = Module.objects.filter(id__in=moduleIds,module__contains=search).count()
+            data = Module.objects.filter(Q(parent_id=parentId),id__in=moduleIds,module__contains=search)[startIndex:endIndex].all()
+            totalLen = Module.objects.filter(Q(parent_id=parentId),id__in=moduleIds,module__contains=search).count()
          else:
-            data = Module.objects.filter(id__in=moduleIds)[startIndex:endIndex].all()
-            totalLen = Module.objects.filter(id__in=moduleIds).count()
+            data = Module.objects.filter(Q(parent_id=parentId),id__in=moduleIds)[startIndex:endIndex].all()
+            totalLen = Module.objects.filter(Q(parent_id=parentId),id__in=moduleIds).count()
          
          for i in data:
+            if i.moduleType=='2':
+               module = f'<a href="{settings.BASE_URL}admin/administration/module/{i.id}">{i.module}</a>'
+            else:
+               module = i.module
             permission = {
                "id":i.id,
-               "module":i.module,
-               "action":(f'<a href="{settings.BASE_URL}admin/administration/module/{i.id}/edit" class="btn btn-primary" >Change</a>')
+               "module":module,
+               "action":(f'<a href="{settings.BASE_URL}admin/administration/module/{i.id}/delete" class="btn btn-sm btn-danger" >Delete</a>')
             }  
             listData.append(permission)
       
@@ -153,10 +157,75 @@ def module(request,*args,**kwargs):
          "aaData":listData
       }, status=200)
      
+   else:
+      context = {
+         'parentId':parentId
+      }
+      return render(request,"admin/module/index.html",context)
+
+@permission_required()
+def deleteModule(request,*args,**kwargs):
+    moduleId = kwargs.get('moduleId')
+    groupIds = kwargs.get('groupIds')
+    if 'Delete' in kwargs.get('permission'):
+        GroupPermission.objects.filter(module_id=moduleId,group_id=groupIds[0]).delete()
+        Module.objects.filter(id=moduleId).delete()
+    return HttpResponseRedirect(request.META['HTTP_REFERER'])
       
 
-   else:
-      return render(request,"admin/module/index.html")
+@xhr_request_only()
+def addEditModule(request,*args,**kwargs):
+    parentId = kwargs.get('parentId', '')
+    groupIds = kwargs.get('groupIds')
+    access = False
+    if set(['Add', 'Edit']).issubset(kwargs.get('permission')):
+      access = True
+      if request.method == 'POST':
+         post = request.POST
+         permission = 'View'
+         url = ''
+         if post['moduleType']==1:
+            permission = 'View,Add,Edit,Delete'
+            url = post['url']
+
+         if post['module_id']:
+            pass
+            # module = Module.objects.filter(id=post['module_id'],parent_id=post['parent_id']).first()
+            # module.module = post['module']
+            # module.moduleType = post['moduleType']
+            # module.url = url
+            # module.status=post['status']
+            # module.save()
+            # print(post['module_id'])
+         else:
+            module = Module.objects.create(
+                  module=post['module'],
+                  moduleType=post['moduleType'],
+                  url=url,
+                  status='1',
+                  parent_id=post['parent_id']
+            )
+            
+            GroupPermission.objects.create(
+               permission=permission,                  
+               module_id=module.id,                  
+               module_parent_id=parentId,
+               group_id=groupIds[0]                   
+            )
+
+         
+      
+      return JsonResponse({
+         "success": True,
+         "parentId":parentId,
+         "status":"Successfully added!",
+         "access":access
+      }, status=200)   
+    else:
+         return JsonResponse({
+            "success": True,
+            "access":False
+         }, status=200)   
 
 
 
@@ -285,6 +354,7 @@ def moduleList(request):
 
 @permission_required()
 def movieList(request,*args,**kwargs):
+   
     if request.method == 'POST':
          start = int(request.POST['start'])
          length = int(request.POST['length'])
@@ -355,17 +425,21 @@ def movieEdit(request,*args,**kwargs):
 @permission_required()
 def movieAdd(request,*args,**kwargs):
    if 'Add' in kwargs.get('permission'):
-      if request.method == 'POST':
-         
+      form = None
+      
+      if request.method == 'POST':         
          post = request.POST
          form = MovieForm(post)
          if form.is_valid():
             check = Posts.objects.filter(name=post['name']).first()
             if check==None:
-               Posts.objects.create(name=post['name'],image=post['image'],rate=post['rate'],size=post['size'],genre=post['genre'],lang=post['lang'])
-           
+               pass
+               # Posts.objects.create(name=post['name'],image=post['image'],rate=post['rate'],size=post['size'],genre=post['genre'],lang=post['lang'])
+      
+      # print(list(form))
       context = {
-         'action':f'{settings.BASE_URL}admin/movie/post/add'
+         'action':f'{settings.BASE_URL}admin/movie/post/add',
+         'form':form
       }
       return render(request,"admin/movie/addEdit.html",context)
    return HttpResponseRedirect(request.META.get('HTTP_REFERER'))

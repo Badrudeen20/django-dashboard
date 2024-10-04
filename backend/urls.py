@@ -28,9 +28,12 @@ urlpatterns = [
 
     
         # path('plugin/chart',views.graphChart),
-        path('administration/module',views.module,name="module"),
+        path('administration/module/',views.module,name="module"),
+        path('administration/module/<int:parentId>',views.module,name="module"),
         # path('administration/module/<int:parentId>/',views.module,name="module"),
-        # path('administration/module/add',views.addeditModule),
+        path('administration/module/add/',views.addEditModule),
+        path('administration/module/add/<int:parentId>',views.addEditModule),
+        path('administration/module/<int:moduleId>/delete',views.deleteModule),
         # path('administration/module/<int:moduleId>/edit',views.addeditModule),
         # path('module/add/<int:parentId>',views.addModule,name="add-module"),
         path('module/list',views.moduleList,name="module-list"),
